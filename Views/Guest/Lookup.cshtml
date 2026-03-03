@@ -1,0 +1,40 @@
+@model GuestLookupViewModel
+@{
+    ViewData["Title"] = "Find My Buffet Pass";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header card-header-gold py-3 text-center">
+                <h5 class="mb-0"><i class="bi bi-search me-2"></i>Find My Buffet Pass</h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-4">
+                    Enter your full name and the event name to retrieve your QR pass.
+                </p>
+                <form asp-action="Lookup" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label fw-semibold"></label>
+                        <input asp-for="FullName" class="form-control" placeholder="e.g. John Smith" />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="EventName" class="form-label fw-semibold"></label>
+                        <input asp-for="EventName" class="form-control" placeholder="e.g. ACME Corp Annual Conference" />
+                        <span asp-validation-for="EventName" class="text-danger small"></span>
+                    </div>
+                    <button type="submit" class="btn btn-gold w-100 py-2">
+                        <i class="bi bi-qr-code me-2"></i>Find My Pass
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

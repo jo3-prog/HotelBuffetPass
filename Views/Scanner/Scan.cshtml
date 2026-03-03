@@ -1,0 +1,182 @@
+@{
+    ViewData["Title"] = "QR Scanner";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header card-header-gold py-3 text-center">
+                <h5 class="mb-0"><i class="bi bi-qr-code-scan me-2"></i>Buffet Pass Scanner</h5>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- Camera view -->
+                <div id="scannerContainer" class="mb-3 position-relative">
+                    <video id="preview" class="w-100 rounded" style="max-height:300px;object-fit:cover;background:#000;"></video>
+                    <div id="scanOverlay" class="position-absolute top-50 start-50 translate-middle"
+                         style="width:200px;height:200px;border:3px solid var(--gold);border-radius:12px;pointer-events:none;"></div>
+                </div>
+
+                <p class="text-muted small text-center mb-3">
+                    <i class="bi bi-camera me-1"></i>Point the camera at the guest's QR code
+                </p>
+
+                <!-- Result panel -->
+                <div id="resultPanel" class="d-none rounded p-4 text-center mb-3">
+                    <div id="resultIcon" style="font-size:3rem;"></div>
+                    <h5 id="resultMessage" class="mt-2 fw-bold"></h5>
+                    <div id="resultDetails" class="mt-2"></div>
+                </div>
+
+                <!-- Manual token input (fallback) -->
+                <details class="mt-3">
+                    <summary class="text-muted small" style="cursor:pointer">
+                        <i class="bi bi-keyboard me-1"></i>Enter token manually
+                    </summary>
+                    <div class="mt-2 d-flex gap-2">
+                        <input type="text" id="manualToken" class="form-control form-control-sm"
+                               placeholder="Paste QR token here" />
+                        <button class="btn btn-sm btn-gold" onclick="validateToken(document.getElementById('manualToken').value)">
+                            Check
+                        </button>
+                    </div>
+                </details>
+
+                <button id="resetBtn" class="btn btn-outline-secondary w-100 mt-3 d-none" onclick="resetScanner()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Scan Next Guest
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script>
+        const video = document.getElementById('preview');
+        const resultPanel = document.getElementById('resultPanel');
+        const resultIcon = document.getElementById('resultIcon');
+        const resultMessage = document.getElementById('resultMessage');
+        const resultDetails = document.getElementById('resultDetails');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let scanning = true;
+        let stream = null;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d'); // returns tools to draw graphics on the canvas element... 
+
+        async function startCamera() {
+            try {
+                // access device's camera...
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+                video.setAttribute('playsinline', true);
+                await video.play();
+                requestAnimationFrame(tick);
+            } catch (err) {
+                document.getElementById('scannerContainer').innerHTML =
+                    `<div class='alert alert-warning text-center'>
+                        <i class='bi bi-camera-video-off me-2'></i>
+                        Camera not available. Use the manual entry below.
+                    </div>`;
+            }
+        }
+
+        function tick() {
+            if (!scanning) return;
+            // check if the video has enough data to process...
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+
+                // draw the video frame on the canvas...
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert'
+                });
+
+                if (code && code.data) {
+                    scanning = false;
+                    // extract token from URL like /Guest/Pass/{token}...
+                    const url = code.data;
+                    const match = url.match(/\/Guest\/Pass\/([a-f0-9-]+)/i);
+                    const token = match ? match[1] : url;
+                    validateToken(token);
+                    return;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // shows a checking loading state...
+        async function validateToken(token) {
+            if (!token) return;
+            scanning = false;
+
+            resultPanel.className = 'rounded p-4 text-center mb-3 bg-light';
+            resultIcon.textContent = '⏳';
+            resultMessage.textContent = 'Checking...';
+            resultDetails.innerHTML = '';
+            resultPanel.classList.remove('d-none');
+            resetBtn.classList.add('d-none');
+
+            // sends token back to /Scanner/ValidateScan for validation...
+            try {
+                const response = await fetch('/Scanner/ValidateScan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ qrToken: token })
+                });
+
+                // gets json from scanner controller...
+                const result = await response.json();
+                showResult(result);
+            } catch (err) {
+                showResult({ isValid: false, message: 'Network error. Please try again.', statusColor: 'danger' });
+            }
+        }
+
+        // display result with color coded feedback...
+        function showResult(result) {
+            const colorMap = {
+                success: { bg: '#d1e7dd', border: '#0f5132', text: '#0f5132', icon: '✅' },
+                danger: { bg: '#f8d7da', border: '#842029', text: '#842029', icon: '❌' },
+                warning: { bg: '#fff3cd', border: '#664d03', text: '#664d03', icon: '⚠️' },
+                secondary: { bg: '#e2e3e5', border: '#495057', text: '#495057', icon: '🕒' }
+            };
+            const c = colorMap[result.statusColor] || colorMap['danger'];
+
+            resultPanel.style.background = c.bg;
+            resultPanel.style.border = `2px solid ${c.border}`;
+            resultPanel.style.color = c.text;
+            resultIcon.textContent = c.icon;
+            resultMessage.textContent = result.message;
+
+            let details = '';
+            if (result.guestName) details += `<strong>${result.guestName}</strong><br/>`;
+            if (result.eventName) details += `<span style='font-size:0.9rem'>${result.eventName}</span><br/>`;
+            if (result.hallName) details += `<span style='font-size:0.85rem;opacity:0.8'>${result.hallName}</span>`;
+            resultDetails.innerHTML = details;
+
+            resetBtn.classList.remove('d-none');
+        }
+
+        // clear result panel...
+        function resetScanner() {
+            scanning = true;
+            resultPanel.classList.add('d-none');
+            resetBtn.classList.add('d-none');
+            document.getElementById('manualToken').value = '';
+            requestAnimationFrame(tick);
+        }
+
+        startCamera();
+    </script>
+    @Html.AntiForgeryToken()
+}

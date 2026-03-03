@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – Hotel Buffet Pass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --gold: #b8960c;
+            --gold-light: #f0d060;
+            --dark: #1a1a2e;
+        }
+
+        body {
+            background-color: #f8f6f0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .navbar-brand span {
+            color: var(--gold);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* .custom-toggler.navbar-toggler {
+            border: 2px solid var(--gold-light);
+        } */
+
+        .navbar {
+            background-color: var(--dark) !important;
+            border-bottom: 3px solid var(--gold);
+        }
+
+        .navbar .nav-link {
+            color: #ccc !important;
+        }
+
+        .navbar .nav-link:hover {
+            color: var(--gold-light) !important;
+        }
+
+        .btn-gold {
+            background-color: var(--gold);
+            color: white;
+            border: none;
+        }
+
+        .btn-gold:hover {
+            background-color: #9a7a0a;
+            color: white;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border-radius: 12px;
+        }
+
+        .card-header-gold {
+            background-color: var(--dark);
+            color: var(--gold-light);
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge-pending { background-color: #ffc107; color: #333; }
+        .status-badge-approved { background-color: #198754; color: white; }
+        .status-badge-rejected { background-color: #dc3545; color: white; }
+
+        footer {
+            background-color: var(--dark);
+            color: #888;
+            border-top: 2px solid var(--gold);
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand text-white" asp-controller="Home" asp-action="Index">
+                <span><i class="bi bi-ticket-perforated-fill"></i> Hotel Buffet Pass</span>
+            </a>
+            <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">
+                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("ContactPerson"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="ContactPerson" asp-action="Dashboard">
+                                    <i class="bi bi-calendar-event"></i> My Events
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("RestaurantStaff"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Scanner" asp-action="Scan">
+                                    <i class="bi bi-qr-code-scan"></i> Scanner
+                                </a>
+                            </li>
+                        }
+                        <li class="nav-item ms-2">
+                            <form method="post" asp-controller="Account" asp-action="Logout" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-box-arrow-right"></i> Sign Out
+                                </button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                <i class="bi bi-person-circle"></i> Staff Login
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4 flex-grow-1">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <footer class="py-3 mt-5 text-center footer">
+        <small>© @DateTime.Now.Year Hotel Events & Conferences. All rights reserved.</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

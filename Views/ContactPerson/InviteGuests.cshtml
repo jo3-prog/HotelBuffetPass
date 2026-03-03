@@ -1,0 +1,82 @@
+@model InviteGuestsViewModel
+@{
+    ViewData["Title"] = "Invite Guests";
+}
+
+<div class="mb-3">
+    <a asp-action="EventDetail" asp-route-id="@Model.EventId" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>Back to @Model.EventName
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header card-header-gold py-3">
+                <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Invite Guests – @Model.EventName</h5>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- Copy Link Section -->
+                <h6 class="fw-bold mb-2">
+                    <i class="bi bi-link-45deg me-1" style="color:var(--gold)"></i>Option 1: Share Link
+                </h6>
+                <p class="text-muted small mb-2">
+                    Copy this link and share it via WhatsApp, email, or any other channel:
+                </p>
+                <div class="input-group mb-4">
+                    <input type="text" class="form-control" id="regLink"
+                           value="@Model.RegistrationLink" readonly />
+                    <button class="btn btn-outline-secondary" onclick="copyLink()" type="button" id="copyBtn">
+                        <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                </div>
+
+                <hr />
+
+                <!-- Email Section -->
+                <h6 class="fw-bold mb-2 mt-3">
+                    <i class="bi bi-envelope-at me-1" style="color:var(--gold)"></i>Option 2: Send Email Invitations
+                </h6>
+                <p class="text-muted small mb-3">
+                    Enter the email addresses of your guests and the system will send them the registration link directly.
+                </p>
+
+                <form asp-action="InviteGuests" method="post">
+                    <input type="hidden" asp-for="EventId" />
+                    <div class="mb-3">
+                        <label asp-for="EmailAddresses" class="form-label fw-semibold small"></label>
+                        <textarea asp-for="EmailAddresses" class="form-control" rows="6"
+                                  placeholder="guest1@company.com, guest2@company.com&#10;guest3@company.com"></textarea>
+                        <div class="form-text">Separate email addresses with commas or new lines.</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-gold">
+                            <i class="bi bi-send me-2"></i>Send Invitations
+                        </button>
+                        <a asp-action="EventDetail" asp-route-id="@Model.EventId"
+                           class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyLink() {
+            const input = document.getElementById('regLink');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied!';
+                btn.classList.replace('btn-outline-secondary', 'btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy';
+                    btn.classList.replace('btn-success', 'btn-outline-secondary');
+                }, 2500);
+            });
+        }
+    </script>
+}

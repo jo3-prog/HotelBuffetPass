@@ -1,0 +1,187 @@
+@model ContactPersonEventViewModel
+@{
+    ViewData["Title"] = Model.EventName;
+    var isExpired = Model.EndDate < DateTime.Today;
+    var remaining = Model.MaxGuests - Model.ApprovedCount;
+}
+
+<div class="mb-3">
+    <a asp-action="Dashboard" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>Back to My Events
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Left panel -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header card-header-gold py-3">
+                <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Event Info</h6>
+            </div>
+            <div class="card-body">
+                <h5 class="fw-bold">@Model.EventName</h5>
+                <p class="text-muted mb-1"><i class="bi bi-building me-1"></i>@Model.HallName</p>
+                <p class="text-muted mb-1">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    @Model.StartDate.ToString("dd MMM yyyy") – @Model.EndDate.ToString("dd MMM yyyy")
+                </p>
+                <p class="text-muted mb-2">
+                    <i class="bi bi-clock me-1"></i>
+                    @Model.BuffetStartTime.ToString(@"hh\:mm") – @Model.BuffetEndTime.ToString(@"hh\:mm")
+                </p>
+                @if (isExpired)
+                {
+                    <span class="badge bg-secondary">Event Expired</span>
+                }
+                else
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header card-header-gold py-3">
+                <h6 class="mb-0"><i class="bi bi-people me-2"></i>Guest Slots</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="fw-bold fs-4 text-success">@Model.ApprovedCount</div>
+                        <small class="text-muted">Approved</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-4 text-warning">@Model.PendingCount</div>
+                        <small class="text-muted">Pending</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-4 @(remaining <= 0 ? "text-danger" : "")" style="@(remaining > 0 ? "color:var(--gold)" : "")">
+                            @remaining
+                        </div>
+                        <small class="text-muted">Slots Left</small>
+                    </div>
+                </div>
+                @if (remaining <= 0)
+                {
+                    <div class="alert alert-warning mt-3 mb-0 small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        All slots filled. Contact the hotel to increase the guest count.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header card-header-gold py-3">
+                <h6 class="mb-0"><i class="bi bi-send me-2"></i>Invite Guests</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">Copy the link to share, or send email invitations:</p>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" class="form-control" id="regLink"
+                           value="@Model.RegistrationLink" readonly />
+                    <button class="btn btn-outline-secondary" onclick="copyLink()" type="button">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+                <a asp-action="InviteGuests" asp-route-id="@Model.EventId"
+                   class="btn btn-sm btn-gold w-100">
+                    <i class="bi bi-envelope me-1"></i>Send Email Invitations
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guest list -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header card-header-gold py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Guest Registrations</h6>
+                <span class="badge bg-light text-dark">@Model.Guests.Count registered</span>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Guests.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox" style="font-size:2rem"></i>
+                        <p class="mt-2">No guests have registered yet.</p>
+                        <p class="small">Share the registration link to get started.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Guest Name</th>
+                                    <th>Registered</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Model.Guests)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@g.FullName</td>
+                                        <td class="text-muted small">@g.RegisteredAt.ToString("dd MMM HH:mm")</td>
+                                        <td>
+                                            @{
+                                                var badgeClass = g.Status switch
+                                                {
+                                                    "Approved" => "status-badge-approved",
+                                                    "Rejected" => "status-badge-rejected",
+                                                    _ => "status-badge-pending"
+                                                };
+                                            }
+                                            <span class="badge @badgeClass">@g.Status</span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (g.Status == "Pending")
+                                            {
+                                                <form asp-action="ApproveGuest" method="post" class="d-inline">
+                                                    <input type="hidden" name="guestId" value="@g.Id" />
+                                                    <input type="hidden" name="eventId" value="@Model.EventId" />
+                                                    <button type="submit" class="btn btn-sm btn-success"
+                                                            @(remaining <= 0 ? "disabled" : "")>
+                                                        <i class="bi bi-check2"></i>
+                                                    </button>
+                                                </form>
+                                                <form asp-action="RejectGuest" method="post" class="d-inline ms-1">
+                                                    <input type="hidden" name="guestId" value="@g.Id" />
+                                                    <input type="hidden" name="eventId" value="@Model.EventId" />
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">—</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyLink() {
+            const input = document.getElementById('regLink');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = event.target.closest('button');
+                btn.innerHTML = '<i class="bi bi-check2"></i>';
+                setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+            });
+        }
+    </script>
+}

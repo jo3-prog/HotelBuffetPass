@@ -1,0 +1,98 @@
+@model GuestQRViewModel
+@{
+    ViewData["Title"] = Model.Status == "Approved" ? "Your Buffet Pass" : "Registration Received";
+    Layout = "_Layout";
+    var isExpired = Model.EndDate < DateTime.Today;
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card text-center">
+            <div class="card-header card-header-gold py-3">
+                <h5 class="mb-0">
+                    @if (Model.Status == "Approved")
+                    {
+                        <span><i class="bi bi-qr-code me-2"></i>Your Buffet Pass</span>
+                    }
+                    else if (Model.Status == "Pending")
+                    {
+                        <span><i class="bi bi-hourglass-split me-2"></i>Awaiting Approval</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-x-circle me-2"></i>Registration Status</span>
+                    }
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <h6 class="fw-bold">@Model.FullName</h6>
+                <div class="rounded p-3 mb-4" style="background:#f8f6f0;">
+                    <p class="mb-1 fw-semibold">@Model.EventName</p>
+                    <p class="text-muted small mb-1"><i class="bi bi-building me-1"></i>@Model.HallName</p>
+                    <p class="text-muted small mb-1">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        @Model.StartDate.ToString("dd MMM yyyy") – @Model.EndDate.ToString("dd MMM yyyy")
+                    </p>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-clock me-1"></i>
+                        Buffet: @Model.BuffetStartTime.ToString(@"hh\:mm") – @Model.BuffetEndTime.ToString(@"hh\:mm")
+                    </p>
+                </div>
+
+                @if (isExpired)
+                {
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-calendar-x me-2"></i><strong>Event Expired</strong>
+                        <p class="mb-0 small mt-1">This event has ended. This pass is no longer valid.</p>
+                    </div>
+                }
+                else if (Model.Status == "Approved" && !string.IsNullOrEmpty(Model.QRCodeBase64))
+                {
+                    <div class="alert alert-success mb-3">
+                        <i class="bi bi-check-circle-fill me-2"></i><strong>Registration Approved!</strong>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        Show this QR code to the restaurant staff when you arrive.
+                        <br/><strong>Valid today only</strong> between @Model.BuffetStartTime.ToString(@"hh\:mm") and @Model.BuffetEndTime.ToString(@"hh\:mm").
+                    </p>
+                    <div class="d-flex justify-content-center mb-3">
+                        <img src="data:image/png;base64,@Model.QRCodeBase64"
+                             alt="Buffet Pass QR Code"
+                             style="width:220px;height:220px;border:4px solid var(--gold);border-radius:12px;padding:8px;" />
+                    </div>
+                    <p class="text-muted small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Save a screenshot of this page. You can also retrieve this pass anytime from the
+                        <a asp-controller="Guest" asp-action="Lookup">Guest Lookup page</a>.
+                    </p>
+                }
+                else if (Model.Status == "Pending")
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-hourglass-split me-2"></i><strong>Pending Approval</strong>
+                        <p class="mb-0 small mt-1">
+                            Your registration has been submitted. The contact person will review and approve it.
+                            Come back to this page or use the <a asp-controller="Guest" asp-action="Lookup">Guest Lookup</a>
+                            to check your status.
+                        </p>
+                    </div>
+                }
+                else if (Model.Status == "Rejected")
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle me-2"></i><strong>Registration Not Approved</strong>
+                        <p class="mb-0 small mt-1">
+                            Your registration was not approved for this event. Please contact the event organiser.
+                        </p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <p class="text-center text-muted small mt-3">
+            <a asp-controller="Guest" asp-action="Lookup">
+                <i class="bi bi-search me-1"></i>Find my pass by name
+            </a>
+        </p>
+    </div>
+</div>

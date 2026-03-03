@@ -1,0 +1,49 @@
+@model GuestRegisterViewModel
+@{
+    ViewData["Title"] = "Register for Buffet Pass";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header card-header-gold py-3 text-center">
+                <h5 class="mb-0"><i class="bi bi-qr-code me-2"></i>Register for Buffet Pass</h5>
+            </div>
+            <div class="card-body p-4">
+                <!-- Event summary -->
+                <div class="rounded p-3 mb-4" style="background:#f8f6f0;border-left:4px solid var(--gold)">
+                    <h6 class="fw-bold mb-1">@Model.EventName</h6>
+                    <p class="text-muted small mb-1"><i class="bi bi-building me-1"></i>@Model.HallName</p>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        @Model.StartDate.ToString("dd MMM yyyy") – @Model.EndDate.ToString("dd MMM yyyy")
+                    </p>
+                </div>
+
+                <p class="text-muted small mb-3">
+                    Enter your full name to register. Once approved by the contact person,
+                    you'll receive a QR code to show at the restaurant.
+                </p>
+
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    <div class="mb-4">
+                        <label asp-for="FullName" class="form-label fw-semibold"></label>
+                        <input asp-for="FullName" class="form-control form-control-lg"
+                               placeholder="e.g. John Smith" autofocus />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                        <div class="form-text">Enter your name exactly as it appears on your booking.</div>
+                    </div>
+                    <button type="submit" class="btn btn-gold w-100 py-2">
+                        <i class="bi bi-send me-2"></i>Submit Registration
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
